@@ -58,10 +58,10 @@ class GameEngine:
         right = min(act.x + act.width, top_block.x + top_block.width)
         overlap = right - left
         
-        is_successful_drop = overlap <= 0
+        is_successful_drop = overlap > 0
         
         if is_successful_drop:
-            trimmed_width = max(10.0, overlap)
+            trimmed_width = overlap
             new_block = Block(left, act.y, trimmed_width, self.block_height, act.color, speed=0)
             self.stack.append(new_block)
             self.score += 1
@@ -77,7 +77,7 @@ class GameEngine:
 
     def handle_event(self, event):
         if self.game_over:
-            if (event.type == pygame.KEYDOWN and event.key == pygame.K_r) or \
+            if (event.type == pygame.KEYDOWN and event.key in (pygame.K_r, pygame.K_SPACE)) or \
                (event.type == pygame.MOUSEBUTTONDOWN and event.button == 1):
                 self.reset()
             return
