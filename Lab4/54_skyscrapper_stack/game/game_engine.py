@@ -1,6 +1,7 @@
 import random
 import pygame
 from game.block import Block
+from game.debris import Debris
 
 
 class GameEngine:
@@ -36,6 +37,7 @@ class GameEngine:
 
         self.feedback_text = ""
         self.feedback_timer = 0
+        self.debris = []
 
         base_x = (self.width - self.base_width) // 2
         base_y = self.height - 60
@@ -82,9 +84,8 @@ class GameEngine:
                 else:
                     self.feedback_text = f"PERFECT! +5"
 
-                self.feedback_timer = 60  # ~1 second at 60 FPS
+                self.feedback_timer = 60
 
-                # Center the new block over top_block and clamp to screen bounds
                 new_x = top_block.x + (top_block.width - new_width) / 2.0
                 new_x = max(20.0, min(self.width - 20.0 - new_width, new_x))
 
@@ -92,6 +93,17 @@ class GameEngine:
             else:
                 self.perfect_streak = 0
                 self.points += 1
+
+                # Generate Debris for off-cut portions
+                if act.x < top_block.x:
+                    off_width = top_block.x - act.x
+                    self.debris.append(Debris(act.x, act.y, off_width, self.block_height, act.color, vx=-2.0))
+                
+                if act.x + act.width > top_block.x + top_block.width:
+                    off_width = (act.x + act.width) - (top_block.x + top_block.width)
+                    off_x = top_block.x + top_block.width
+                    self.debris.append(Debris(off_x, act.y, off_width, self.block_height, act.color, vx=2.0))
+
                 trimmed_width = overlap
                 new_block = Block(left, act.y, trimmed_width, self.block_height, act.color, speed=0)
 
@@ -102,6 +114,8 @@ class GameEngine:
                 shift_amount = self.block_height + 4
                 for b in self.stack:
                     b.y += shift_amount
+                for d in self.debris:
+                    d.y += shift_amount
 
             self.spawn_active_block()
         else:
@@ -125,6 +139,13 @@ class GameEngine:
             if self.feedback_timer > 0:
                 self.feedback_timer -= 1
 
+        # Update active debris animations
+        for d in self.debris:
+            d.update()
+
+        # Remove offscreen debris
+        self.debris = [d for d in self.debris if not d.is_offscreen(self.height)]
+
     def render(self, screen):
         screen.fill((24, 27, 36))
 
@@ -140,6 +161,9 @@ class GameEngine:
 
         for b in self.stack:
             b.render(screen)
+
+        for d in self.debris:
+            d.render(screen)
 
         if not self.game_over:
             self.active_block.render(screen)
