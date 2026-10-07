@@ -16,6 +16,9 @@ class GameEngine:
         self.font_hud = pygame.font.SysFont(None, 28)
         self.font_big = pygame.font.SysFont(None, 46)
 
+        # Pre-allocate gradient background surface for efficient rendering
+        self.bg_surface = pygame.Surface((1, self.height))
+
         self.reset()
 
     def get_color(self, index):
@@ -139,15 +142,52 @@ class GameEngine:
             if self.feedback_timer > 0:
                 self.feedback_timer -= 1
 
-        # Update active debris animations
         for d in self.debris:
             d.update()
 
-        # Remove offscreen debris
         self.debris = [d for d in self.debris if not d.is_offscreen(self.height)]
 
+    def _get_sky_colors(self):
+        # Color milestones: (top_color, bottom_color)
+        phases = [
+            (0,  (100, 180, 240), (210, 235, 255)),  # Day
+            (10, (220, 90, 50),   (250, 180, 80)),   # Sunset
+            (25, (60, 30, 90),    (170, 70, 120)),   # Twilight
+            (45, (10, 12, 30),    (30, 40, 75)),     # High Atmosphere / Night
+        ]
+
+        h = self.score
+        if h <= phases[0][0]:
+            return phases[0][1], phases[0][2]
+        if h >= phases[-1][0]:
+            return phases[-1][1], phases[-1][2]
+
+        for i in range(len(phases) - 1):
+            h1, top1, bot1 = phases[i]
+            h2, top2, bot2 = phases[i + 1]
+            if h1 <= h <= h2:
+                t = (h - h1) / float(h2 - h1)
+                
+                def lerp(c1, c2):
+                    return tuple(int(max(0, min(255, c1[j] + (c2[j] - c1[j]) * t))) for j in range(3))
+
+                return lerp(top1, top2), lerp(bot1, bot2)
+
+        return phases[0][1], phases[0][2]
+
     def render(self, screen):
-        screen.fill((24, 27, 36))
+        top_color, bot_color = self._get_sky_colors()
+
+        # Render gradient to 1-pixel wide vertical surface and scale up
+        for y in range(self.height):
+            t = y / float(self.height)
+            r = int(top_color[0] + (bot_color[0] - top_color[0]) * t)
+            g = int(top_color[1] + (bot_color[1] - top_color[1]) * t)
+            b = int(top_color[2] + (bot_color[2] - top_color[2]) * t)
+            self.bg_surface.set_at((0, y), (r, g, b))
+
+        scaled_bg = pygame.transform.scale(self.bg_surface, (self.width, self.height))
+        screen.blit(scaled_bg, (0, 0))
 
         title_surf = self.font_title.render("Skyscraper Stack", True, (245, 245, 245))
         screen.blit(title_surf, (self.width // 2 - title_surf.get_width() // 2, 16))
