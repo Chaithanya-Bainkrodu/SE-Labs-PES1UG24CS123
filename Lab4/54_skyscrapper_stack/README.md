@@ -95,4 +95,4 @@ Submission is only the following three things:
 
 ### AI Chat Documentation
 - [Complete Gemini chat history (PDF)](chat_history.pdf)
-- [Public Gemini conversation](https://share.gemini.google/AFIcZW05Rh7X)
+- [Public Gemini conversation](https://share.gemini.google/txIJeJyUPbUI)
