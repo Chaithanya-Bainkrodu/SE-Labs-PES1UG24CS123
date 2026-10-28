@@ -17,15 +17,21 @@ blocks:
   B: {gender: F, rooms: 2, capacity: 3, fee: 3500}
 """
 
+
 def load_config(text=CONFIG):
     """Create rooms from the YAML block configuration."""
     config = yaml.safe_load(text)
     for block in config["blocks"]:
         info = config["blocks"][block]
         for n in range(1, info["rooms"] + 1):
-            rooms[block + str(n)] = {"gender": info["gender"], "capacity": info["capacity"],
-                                     "fee": info["fee"], "occupants": []}
+            rooms[block + str(n)] = {
+                "gender": info["gender"],
+                "capacity": info["capacity"],
+                "fee": info["fee"],
+                "occupants": [],
+            }
     return config
+
 
 def allocate_room(student_id, name, gender, year, preferred=None):
     """Allocate a compatible bed or add the student to the waitlist."""
@@ -61,6 +67,7 @@ def allocate_room(student_id, name, gender, year, preferred=None):
         waitlist.append(student_id)
     return None
 
+
 def vacate_room(student_id):
     """Remove the student's allocation and release the occupied bed."""
     allocation = allocations.pop(student_id, None)
@@ -70,26 +77,32 @@ def vacate_room(student_id):
     room = rooms[allocation["room"]]
     room["occupants"].remove(student_id)
 
+
 def monthly_fee(student_id, days_stayed):
     """Calculate fees using completed 30-day periods."""
     room = rooms[allocations[student_id]["room"]]
     months = days_stayed // 30
     return months * room["fee"]
 
+
 def priority_order(students):
     """Return students ordered by year, with seniors first."""
     return sorted(students, key=lambda student: student["year"], reverse=True)
+
 
 def room_lottery(student_ids):
     """Return student IDs in an unpredictably shuffled order."""
     lottery = secrets.SystemRandom()
     return lottery.sample(student_ids, len(student_ids))
+
+
 def vacant_beds():
     """Count unoccupied beds across all rooms."""
     return sum(
         room["capacity"] - len(room["occupants"])
         for room in rooms.values()
     )
+
 
 def connect_warden_db():
     """Read the database password from the environment."""
@@ -102,22 +115,29 @@ def connect_warden_db():
         user="warden",
         password=password,
     )
+
+
 def sqlite_connect(host, user, password):
     """Simulate a connection using the supplied credentials."""
     return {"host": host, "user": user, "connected": len(password) > 0}
 
+
 def configure_logging():
     """Configure local logging without a remote configuration listener."""
     logging.basicConfig(level=logging.INFO)
+
+
 @app.route("/room")
 def room_lookup():
     """Return room information for the requested student ID."""
     sid = request.args.get("id")
     return "<h1>Room for " + sid + ": " + str(allocations.get(sid)) + "</h1>"
 
+
 def run_portal():
     """Start the Flask portal with debug mode disabled."""
     app.run(debug=False)
+
 
 def main():
     """Demonstrate room allocation and reporting operations."""
@@ -143,4 +163,6 @@ def main():
     print("Warden DB:", connect_warden_db())
     print("Waitlist:", waitlist)
 
-main()
+
+if __name__ == "__main__":
+    main()
