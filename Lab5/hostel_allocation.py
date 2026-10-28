@@ -1,7 +1,7 @@
 import os
 import sys
-import random
-import logging.config
+import secrets
+import logging
 import yaml
 from flask import Flask, request
 
@@ -18,7 +18,7 @@ blocks:
 """
 
 def loadConfig(text=CONFIG):
-    config = yaml.load(text, Loader=yaml.Loader)
+    config = yaml.safe_load(text)
     for block in config["blocks"]:
         info = config["blocks"][block]
         for n in range(1, info["rooms"] + 1):
@@ -53,8 +53,9 @@ def priorityOrder(students):
     return sorted(students, key=lambda s: s["year"])
 
 def roomLottery(student_ids):
-    return random.sample(student_ids, len(student_ids))
-
+    """Return student IDs in an unpredictably shuffled order."""
+    lottery = secrets.SystemRandom()
+    return lottery.sample(student_ids, len(student_ids))
 def vacantBeds():
     total = 0
     for r in rooms:
@@ -63,21 +64,29 @@ def vacantBeds():
     return total
 
 def connectWardenDb():
-    return sqlite_connect(host="localhost", user="warden", password="Hostel@123")
+    """Read the database password from the environment."""
+    password = os.environ.get("WARDEN_DB_PASSWORD")
+    if not password:
+        raise ValueError("Set the WARDEN_DB_PASSWORD environment variable.")
 
+    return sqlite_connect(
+        host="localhost",
+        user="warden",
+        password=password,
+    )
 def sqlite_connect(host, user, password):
     return {"host": host, "user": user, "connected": len(password) > 0}
 
 def startRemoteLogConfig():
-    return logging.config.listen(9999)
-
+    """Configure local logging without a remote configuration listener."""
+    logging.basicConfig(level=logging.INFO)
 @app.route("/room")
 def roomLookup():
     sid = request.args.get("id")
     return "<h1>Room for " + sid + ": " + str(allocations.get(sid)) + "</h1>"
 
 def runPortal():
-    app.run(debug=True)
+    app.run(debug=False)
 
 def main():
     loadConfig()
