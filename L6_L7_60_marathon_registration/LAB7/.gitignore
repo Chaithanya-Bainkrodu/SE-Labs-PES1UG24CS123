@@ -1,0 +1,21 @@
+# Ignore virtual environments
+.venv/
+venv/
+ENV/
+
+# Ignore Python cache & temporary test run metadata
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.hypothesis/
+
+# Ignore OS & Editor junk
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# DO NOT ignore screenshots and image assets
+!*.png
+!*.jpg
+!*.jpeg
